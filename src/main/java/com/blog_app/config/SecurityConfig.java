@@ -1,0 +1,141 @@
+package com.blog_app.config;
+
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.filter.CorsFilter;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.firewall.HttpFirewall;
+import org.springframework.security.web.firewall.StrictHttpFirewall;
+import org.springframework.web.servlet.config.annotation.EnableWebMvc;
+
+import com.blog_app.Security.CustomUserDetailService;
+import com.blog_app.Security.JwtAuthenticationEntryPoint;
+import com.blog_app.Security.JwtAuthenticationFilter;
+import com.blog_app.Security.JwtTokenHelper;
+
+@Configuration
+@EnableWebSecurity
+@EnableWebMvc
+@EnableMethodSecurity(prePostEnabled = true)
+public class SecurityConfig {
+	
+	
+	
+	@Autowired
+	private JwtTokenHelper jwtTokenHelper;
+	//private final JwtAuthenticationFilter filter;
+    //private final JwtAuthenticationEntryPoint point;
+	
+	@Autowired
+	private CustomUserDetailService customUserDetailService;
+	
+	@Autowired
+	private JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+	
+	@Autowired
+	private JwtAuthenticationFilter jwtAuthenticationFilter;
+	 
+	public static final String[] PUBLIC_URLS = {
+			"/api/v1/auth/login","/api/v1/auth/resend-otp","/api/v1/auth/edit-email","/api/v1/oauth2/**","/api/v1/auth/register","/api/v1/auth/verify-otp","/api/v1/auth/upload-profile-pic", "/v3/api-docs/**","/ws/**" ,"/v2/api-docs", "/swagger-resources/**", "/swagger-ui/**", "/webjars/**","/api/password/**","/api/post/view/**"
+	};
+	
+	@Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+       // JwtAuthenticationFilter jwtAuthenticationFilter = new JwtAuthenticationFilter(jwtTokenHelper);
+
+		http
+        .csrf(csrf -> csrf.disable())	
+        .cors(cors -> cors.configurationSource(corsConfigurationSource()))  // Add CORS configuration
+        .authorizeHttpRequests((authz) -> authz
+            .requestMatchers(PUBLIC_URLS).permitAll()
+            .anyRequest().authenticated())
+        .exceptionHandling(exceptionHandling -> exceptionHandling.authenticationEntryPoint(jwtAuthenticationEntryPoint))
+        .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+        http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+
+    return http.build();
+		
+	}
+	
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+		return new BCryptPasswordEncoder();
+	}
+	
+	protected void configure(AuthenticationManagerBuilder auth) throws Exception{
+		
+		auth.userDetailsService(this.customUserDetailService).passwordEncoder(passwordEncoder());
+		
+	}
+	
+	@Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
+        return authenticationConfiguration.getAuthenticationManager();
+    }
+	
+	@Bean
+	public FilterRegistrationBean<org.springframework.web.filter.CorsFilter> coresFilter() {
+	    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+	    CorsConfiguration corsConfiguration = new CorsConfiguration();
+
+	    corsConfiguration.setAllowCredentials(true);
+//	    corsConfiguration.addAllowedOriginPattern("http://localhost:9090");  // Allow localhost:9090
+//	    corsConfiguration.addAllowedOriginPattern("http://localhost:3000");
+	    corsConfiguration.addAllowedOrigin("http://localhost");  // Frontend URL
+//	    corsConfiguration.addAllowedOrigin("http://localhost:80"); 
+	    corsConfiguration.addAllowedHeader("Authorization");
+	    corsConfiguration.addAllowedHeader("Content-Type");
+	    corsConfiguration.addAllowedHeader("Accept");
+	    corsConfiguration.addAllowedMethod("GET");
+	    corsConfiguration.addAllowedMethod("POST");
+	    corsConfiguration.addAllowedMethod("PUT");
+	    corsConfiguration.addAllowedMethod("DELETE");
+	    corsConfiguration.addAllowedMethod("OPTIONS");
+	    corsConfiguration.setMaxAge(3600L);
+
+	    source.registerCorsConfiguration("/**", corsConfiguration);
+
+	    // Explicitly pass CorsFilter class in the FilterRegistrationBean constructor
+	    FilterRegistrationBean<CorsFilter> bean = new FilterRegistrationBean(new CorsFilter(source));
+	    bean.setOrder(0);
+	    return bean;
+	}
+	 @Bean
+	    public CorsConfigurationSource corsConfigurationSource() {
+	        CorsConfiguration configuration = new CorsConfiguration();
+	        configuration.addAllowedOrigin("http://localhost");  // Frontend URL
+	        configuration.addAllowedMethod("*");
+	        configuration.addAllowedHeader("*");
+	        configuration.setAllowCredentials(true);
+
+	        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+	        source.registerCorsConfiguration("/**", configuration);
+	        return source;
+	    }
+	 
+	 @Bean
+	    public HttpFirewall allowUrlEncodedSlashHttpFirewall() {
+	        StrictHttpFirewall firewall = new StrictHttpFirewall();
+	        firewall.setAllowUrlEncodedSlash(true);  // Allow encoded slashes
+	        firewall.setAllowSemicolon(true);       // Allow semicolons (optional, based on your needs)
+	        firewall.setAllowUrlEncodedDoubleSlash(true);     // Allow double slashes in URLs
+	        return firewall;
+	    }
+}
+
