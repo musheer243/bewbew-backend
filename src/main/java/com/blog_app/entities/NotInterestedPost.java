@@ -2,6 +2,7 @@ package com.blog_app.entities;
 
 import java.time.LocalDateTime;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -28,7 +29,7 @@ public class NotInterestedPost{
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @ManyToOne
+    @ManyToOne(cascade = CascadeType.ALL) // Ensure cascading behavior
     @JoinColumn(name = "post_id", nullable = false)
     private Post post;
 

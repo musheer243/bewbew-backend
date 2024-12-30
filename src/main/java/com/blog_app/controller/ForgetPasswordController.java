@@ -38,6 +38,7 @@ public class ForgetPasswordController {
 	
 	@PostMapping("/forget")
 	public ResponseEntity<ApiResponse> forgetPassword(@RequestParam String email){
+		//hav to apply checks overhere to check if the user provided email does exists in the database
 		String otp = otpService.generateOtp(email);
 		emailService.sendEmail(email, "password reset otp valid for 5mins", "your otp is: " + otp);
 		return new ResponseEntity<ApiResponse>(new ApiResponse("OTP sent to your email.",true),HttpStatus.OK);

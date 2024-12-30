@@ -81,5 +81,9 @@ public class Post {
 	
 	@OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
 	private Set<PostLike> likes = new HashSet<>();
+	
+	@OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+	private Set<NotInterestedPost> notInterestedPosts = new HashSet<>();
+
 
 }

@@ -18,6 +18,8 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.client.endpoint.OAuth2AccessTokenResponseClient;
+import org.springframework.security.oauth2.client.endpoint.OAuth2AuthorizationCodeGrantRequest;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.firewall.HttpFirewall;
@@ -28,6 +30,10 @@ import com.blog_app.Security.CustomUserDetailService;
 import com.blog_app.Security.JwtAuthenticationEntryPoint;
 import com.blog_app.Security.JwtAuthenticationFilter;
 import com.blog_app.Security.JwtTokenHelper;
+
+
+import org.springframework.security.oauth2.client.endpoint.DefaultAuthorizationCodeTokenResponseClient;
+
 
 @Configuration
 @EnableWebSecurity
@@ -52,7 +58,7 @@ public class SecurityConfig {
 	private JwtAuthenticationFilter jwtAuthenticationFilter;
 	 
 	public static final String[] PUBLIC_URLS = {
-			"/api/v1/auth/login","/api/v1/auth/resend-otp","/api/v1/auth/edit-email","/api/v1/oauth2/**","/api/v1/auth/register","/api/v1/auth/verify-otp","/api/v1/auth/upload-profile-pic", "/v3/api-docs/**","/ws/**" ,"/v2/api-docs", "/swagger-resources/**", "/swagger-ui/**", "/webjars/**","/api/password/**","/api/post/view/**"
+			"/api/v1/auth/login","/api/v1/auth/resend-otp","/api/v1/auth/edit-email","/api/v1/oauth2/**","/api/v1/oauth2/google/callback","/api/v1/auth/register","/api/v1/auth/verify-otp","/api/v1/auth/upload-profile-pic", "/v3/api-docs/**","/ws/**" ,"/v2/api-docs", "/swagger-resources/**", "/swagger-ui/**", "/webjars/**","/api/password/**","/api/post/view/**"
 	};
 	
 	@Bean
@@ -66,11 +72,28 @@ public class SecurityConfig {
             .requestMatchers(PUBLIC_URLS).permitAll()
             .anyRequest().authenticated())
         .exceptionHandling(exceptionHandling -> exceptionHandling.authenticationEntryPoint(jwtAuthenticationEntryPoint))
-        .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+        .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+		
+		 // OAuth2 Login Configuration
+		.oauth2Login(oauth2 -> oauth2
+			    .loginPage("/api/v1/oauth2/google/callback") // Customize callback URL
+			    .authorizationEndpoint(authorization -> authorization
+			        .baseUri("/oauth2/authorization/google") // Customize authorization endpoint
+			    )
+			    .tokenEndpoint(token -> token
+			        .accessTokenResponseClient(accessTokenResponseClient()) // Customize token response client
+			    )
+			);
+        
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
     return http.build();
 		
+	}
+	
+	@Bean
+	public OAuth2AccessTokenResponseClient<OAuth2AuthorizationCodeGrantRequest> accessTokenResponseClient() {
+	    return new DefaultAuthorizationCodeTokenResponseClient();
 	}
 	
     @Bean
@@ -96,8 +119,8 @@ public class SecurityConfig {
 
 	    corsConfiguration.setAllowCredentials(true);
 //	    corsConfiguration.addAllowedOriginPattern("http://localhost:9090");  // Allow localhost:9090
-//	    corsConfiguration.addAllowedOriginPattern("http://localhost:3000");
-	    corsConfiguration.addAllowedOrigin("http://localhost");  // Frontend URL
+	    corsConfiguration.addAllowedOriginPattern("http://localhost:3000");
+//	    corsConfiguration.addAllowedOrigin("http://localhost");  // Frontend URL
 //	    corsConfiguration.addAllowedOrigin("http://localhost:80"); 
 	    corsConfiguration.addAllowedHeader("Authorization");
 	    corsConfiguration.addAllowedHeader("Content-Type");
@@ -119,7 +142,7 @@ public class SecurityConfig {
 	 @Bean
 	    public CorsConfigurationSource corsConfigurationSource() {
 	        CorsConfiguration configuration = new CorsConfiguration();
-	        configuration.addAllowedOrigin("http://localhost");  // Frontend URL
+	        configuration.addAllowedOrigin("http://localhost:3000");  // Frontend URL
 	        configuration.addAllowedMethod("*");
 	        configuration.addAllowedHeader("*");
 	        configuration.setAllowCredentials(true);

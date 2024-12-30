@@ -1,6 +1,9 @@
 package com.blog_app.controller;
 
+import java.io.Console;
 import java.time.LocalDateTime;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -80,8 +83,18 @@ public class OAuth2Controller {
 	    
 	 // Step 2: Handle Google's callback and exchange the authorization code for an access token
 	    @GetMapping("/google/callback")
-	    public ResponseEntity<JwtAuthResponse> handleGoogleCallback(@RequestParam("code") String code) throws JsonProcessingException {
+	    public RedirectView handleGoogleCallback(@RequestParam("code") String code) throws JsonProcessingException {
 	        // Exchange the authorization code for an access token
+	       // String extractedCode = code;
+//	        
+//	        String extractedCode = code.split("&")[0];
+//
+//	        String remainingCode = code.substring(extractedCode.length() + 1);  // +1 to remove the '&'
+//
+//	     // Now, `extractedCode` contains the part you wanted to extract
+//	        System.out.println("Extracted code: " + extractedCode);
+//	        System.out.println("Remaining code: " + remainingCode);
+
 	        MultiValueMap<String, String> tokenRequestParams = new LinkedMultiValueMap<>();
 	        tokenRequestParams.add("code", code);
 	        tokenRequestParams.add("client_id", clientId);
@@ -115,18 +128,13 @@ public class OAuth2Controller {
 	        // Step 5: Save user details in the database
 	        User user = userRepo.findByEmail(email).orElseGet(() -> registerNewUser(email, name, picture));
 
-	     // Step 6: Generate a JWT token for the user
+	        // Step 6: Generate a JWT token for the user
 	        UserDetails userDetails = this.userDetailsService.loadUserByUsername(user.getEmail());
 	        String token = this.jwtTokenHelper.generateToken(userDetails);
 
-	        // Step 7: Return the JWT token
-	        JwtAuthResponse jwtResponse = new JwtAuthResponse();
-	        jwtResponse.setToken(token);
-	        jwtResponse.setEmail(this.jwtTokenHelper.getEmailFromToken(token));
-	        jwtResponse.setUserId(this.jwtTokenHelper.getUserIdFromToken(token));
-	        jwtResponse.setUsername(this.jwtTokenHelper.getUsernameFromToken(token));
-	        // Send a success message
-	        return new ResponseEntity<>(jwtResponse, HttpStatus.OK);
+	        // Redirect to frontend with the token
+	        String frontendRedirectUrl = "http://localhost:3000/login-success?token=" + token;
+	        return new RedirectView(frontendRedirectUrl);
 	    }
 
 	    
