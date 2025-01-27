@@ -308,6 +308,13 @@ public class PostController {
 	        return new ResponseEntity<String>(response,HttpStatus.OK);
 	    }
 		
+		//get boolean for if user has liked a specific post or not
+		@GetMapping("/post/{postId}/isLiked")
+		public ResponseEntity<Boolean> isPostLiked(@PathVariable int postId, @RequestParam int userId) {
+		    boolean isLiked = postLikeService.isPostLikedByUser(postId, userId);
+		    return ResponseEntity.ok(isLiked);
+		}
+		
 		 // New endpoint to get my liked posts
 	    @GetMapping("/post/user/{userId}/liked-posts")
 	    public ResponseEntity<PostResponse> getLikedPosts(@PathVariable Integer userId,
@@ -341,6 +348,12 @@ public class PostController {
 	        return new ResponseEntity<String>(response,HttpStatus.OK);
 	    }
 		
+		//get boolean for if user has Saved a specific post or not
+				@GetMapping("/post/{postId}/isSaved")
+				public ResponseEntity<Boolean> isPostSaved(@PathVariable int postId, @RequestParam int userId) {
+					boolean postSavedByUser = savedPostService.isPostSavedByUser(postId, userId);
+					return ResponseEntity.ok(postSavedByUser);
+				}
 		// New endpoint to get my saved posts
 	    @GetMapping("/post/user/{userId}/saved-posts")
 	    public ResponseEntity<PostResponse> getSavedPosts(@PathVariable Integer userId,

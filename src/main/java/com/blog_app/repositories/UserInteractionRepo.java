@@ -14,6 +14,6 @@ public interface UserInteractionRepo extends JpaRepository<UserInteraction, Long
 	
 	List<UserInteraction> findByPost(Post post);
 	
-	UserInteraction findByPostAndUser(Post post, User user);
+	UserInteraction findByPostAndUserAndInteractionType(Post post, User user, int interaction);
 	
 }

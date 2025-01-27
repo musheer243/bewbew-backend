@@ -9,6 +9,8 @@ import com.blog_app.payloads.UserDto;
 public interface PostLikeService {
 
 	String toggleLikePost(int postId, int userId);
+	
+	boolean isPostLikedByUser(int postId, int userId);
 	    
     List<UserDto> getUsersWhoLikedPost(int postId);
 

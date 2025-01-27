@@ -97,8 +97,13 @@ public class PostServiceImpl implements PostService {
 	    // Pass the media file names to the file service for handling deletion
 	    this.fIleServiceMedia.deletePostFiles(mediaFileNames);
 
-	    // Finally, delete the post from the repository
+	    // Finally, delete the post from the repository and decrease user total posts
+	    User user = post.getUser();
+	    user.setTotalPosts(user.getTotalPosts()-1);
+	    userRepo.save(user);
+	    
 	    this.postRepo.delete(post);
+	    
 	}
 	
 	

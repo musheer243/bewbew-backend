@@ -12,6 +12,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.blog_app.entities.Notification;
 import com.blog_app.entities.Post;
@@ -28,7 +29,7 @@ import com.blog_app.repositories.PostRepo;
 import com.blog_app.repositories.UserInteractionRepo;
 import com.blog_app.repositories.UserRepo;
 import com.blog_app.services.PostLikeService;
-
+@Transactional
 @Service
 public class PostLikeServiceImpl implements PostLikeService{
 
@@ -56,6 +57,7 @@ public class PostLikeServiceImpl implements PostLikeService{
 	@Autowired
 	private UserInteractionRepo userInteractionRepo;
 	
+	@Transactional
 	@Override
 	public String toggleLikePost(int postId, int userId) {
 		Post post = this.postRepo.findById(postId).orElseThrow(()-> new ResourceNotFoundException("post", "postId", postId));
@@ -66,8 +68,10 @@ public class PostLikeServiceImpl implements PostLikeService{
 		if (hasLiked) {
 			//unlike the post
 			PostLike postLike = this.postLikeRepo.findByPostAndUser(post, user);
+			post.getLikes().remove(postLike);
+		    user.getLikes().remove(postLike);
 			postLikeRepo.delete(postLike);
-			
+
 			//decrement the like count
 			post.setLikeCount(post.getLikeCount() -1);
 			postRepo.save(post);
@@ -77,8 +81,8 @@ public class PostLikeServiceImpl implements PostLikeService{
 	        postOwner.setTotalLikes(postOwner.getTotalLikes() - 1);
 	        this.userRepo.save(postOwner);
 	        
-	        UserInteraction interaction = this.userInteractionRepo.findByPostAndUser(post, user);
-	        if (interaction!=null) {
+	        UserInteraction interaction = this.userInteractionRepo.findByPostAndUserAndInteractionType(post, user, 1);
+	        if (interaction != null && interaction.getInteractionType() == 1) {
 	        	this.userInteractionRepo.delete(interaction);
 			}
 			
@@ -126,6 +130,13 @@ public class PostLikeServiceImpl implements PostLikeService{
 		}
 	}
 
+	@Override
+	public boolean isPostLikedByUser(int postId, int userId) {
+		Post post = this.postRepo.findById(postId).orElseThrow(()-> new ResourceNotFoundException("post", "postId", postId));
+		User user = this.userRepo.findById(userId).orElseThrow(()-> new ResourceNotFoundException("user", "userId", userId));
+		
+		return this.postLikeRepo.existsByPostAndUser(post, user);
+	}
 	
 	@Override
 	public PostResponse getLikedPostsByUser(int userId, int pageNumber, int pageSize, String sortBy, String sortDir) {
@@ -160,6 +171,9 @@ public class PostLikeServiceImpl implements PostLikeService{
 		List<UserDto> map = allByPost.stream().map(postLike -> modelMapper.map(postLike.getUser(), UserDto.class)).collect(Collectors.toList());
 		return map;
 	}
+
+
+	
 
 	
 

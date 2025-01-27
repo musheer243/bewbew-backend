@@ -10,6 +10,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.blog_app.entities.Post;
 import com.blog_app.entities.PostLike;
@@ -42,6 +43,7 @@ public class SavedPostServiceImpl implements SavedPostService {
 	@Autowired
 	private UserInteractionRepo userInteractionRepo;
 	
+	@Transactional
 	@Override
 	public String toggleSavedPost(int postId, int userId) {
 
@@ -53,14 +55,16 @@ public class SavedPostServiceImpl implements SavedPostService {
 		if (hasSaved) {
 			//unlike the post
 			 SavedPost savedPost = this.savedPostRepo.findByPostAndUser(post, user);
+			 user.getSavedPosts().remove(savedPost);
+			 post.getSavedPosts().remove(savedPost);
 			savedPostRepo.delete(savedPost);
 			
 			//decrement the like count
 			post.setSaveCount(post.getSaveCount() -1);
 			postRepo.save(post);
 			
-			UserInteraction interaction = this.userInteractionRepo.findByPostAndUser(post, user);
-			if (interaction!=null) {
+			UserInteraction interaction = this.userInteractionRepo.findByPostAndUserAndInteractionType(post, user, 2);
+	        if (interaction != null && interaction.getInteractionType() == 2) {
 				this.userInteractionRepo.delete(interaction);
 			}
 			
@@ -88,6 +92,15 @@ public class SavedPostServiceImpl implements SavedPostService {
 
 		}
 	}
+	
+	@Override
+	public boolean isPostSavedByUser(int postId, int userId) {
+		Post post = this.postRepo.findById(postId).orElseThrow(()-> new ResourceNotFoundException("post", "postId", postId));
+		User user = this.userRepo.findById(userId).orElseThrow(()-> new ResourceNotFoundException("user", "userId", userId));
+		
+		return this.savedPostRepo.existsByPostAndUser(post, user);
+	}
+
 
 	@Override
 	public PostResponse getSavedPostsByUser(int userId, int pageNumber, int pageSize, String sortBy, String sortDir) {
@@ -111,6 +124,7 @@ public class SavedPostServiceImpl implements SavedPostService {
 		return postResponse;
 	}
 
+	
 	
 
 	}

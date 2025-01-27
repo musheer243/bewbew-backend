@@ -10,6 +10,9 @@ public interface SavedPostService {
 
 	String toggleSavedPost(int postId, int userId);
 	
+	boolean isPostSavedByUser(int postId, int userId);
+
+	
     PostResponse getSavedPostsByUser(int userId,int pageNumber, int pageSize, String sortBy, String sortDir);
 
 	

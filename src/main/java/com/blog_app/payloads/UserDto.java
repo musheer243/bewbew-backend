@@ -51,6 +51,8 @@ public class UserDto {
 	
 	private LocalDateTime joiningdate;
 	
+	private String userPreference;
+	
     private int totalLikes = 0;
 
     private int totalPosts = 0;
