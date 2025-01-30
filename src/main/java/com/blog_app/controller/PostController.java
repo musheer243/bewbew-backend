@@ -39,8 +39,11 @@ import jakarta.servlet.http.HttpServletResponse;
 @RequestMapping("/api")
 public class PostController {
 	
-	@Value("${app.base.url}")  // Inject the base URL from application.properties
-    private String baseUrl;
+//	@Value("${app.base.url}")  // Inject the base URL from application.properties
+//    private String baseUrl;
+	
+	@Value("${frontend.base.url}")
+	private String frontendBaseUrl;
 
 	@Autowired
 	private PostLikeService postLikeService;
@@ -149,7 +152,7 @@ public class PostController {
 	    @GetMapping("/post/share/{postId}")
 	    public ResponseEntity<String> sharePost(@PathVariable int postId) {
 	        // Generate shareable link (e.g., https://yourapp.com/posts/share/{postId})
-	        String shareLink = baseUrl + "/api/post/view/" + postId;
+	        String shareLink = frontendBaseUrl + "/api/post/view/" + postId;
 	        return new ResponseEntity<String>(shareLink,HttpStatus.OK);
 	    }
 		
@@ -347,6 +350,27 @@ public class PostController {
 	        String response = this.savedPostService.toggleSavedPost(postId, userId);
 	        return new ResponseEntity<String>(response,HttpStatus.OK);
 	    }
+		
+		//api to check both post is like or saved or both or neither
+		@GetMapping("/post/{postId}/status")
+		public ResponseEntity<String> getPostStatus(@PathVariable int postId, @RequestParam int userId) {
+		    boolean isLiked = postLikeService.isPostLikedByUser(postId, userId);
+		    boolean isSaved = savedPostService.isPostSavedByUser(postId, userId);
+
+		    String status;
+		    if (isLiked && isSaved) {
+		        status = "Post is liked and saved.";
+		    } else if (isLiked) {
+		        status = "Post is liked but not saved.";
+		    } else if (isSaved) {
+		        status = "Post is saved but not liked.";
+		    } else {
+		        status = "Post is neither liked nor saved.";
+		    }
+
+		    return ResponseEntity.ok(status);
+		}
+
 		
 		//get boolean for if user has Saved a specific post or not
 				@GetMapping("/post/{postId}/isSaved")
