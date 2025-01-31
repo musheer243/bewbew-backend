@@ -70,6 +70,7 @@ public class SecurityConfig {
         .cors(cors -> cors.configurationSource(corsConfigurationSource()))  // Add CORS configuration
         .authorizeHttpRequests((authz) -> authz
             .requestMatchers(PUBLIC_URLS).permitAll()
+            .requestMatchers("/ws/**").authenticated()// added dis for authentication the websocket connection
             .anyRequest().authenticated())
         .exceptionHandling(exceptionHandling -> exceptionHandling.authenticationEntryPoint(jwtAuthenticationEntryPoint))
         .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

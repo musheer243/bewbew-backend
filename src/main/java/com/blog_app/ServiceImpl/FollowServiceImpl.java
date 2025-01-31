@@ -47,15 +47,20 @@ public class FollowServiceImpl implements FollowService {
             userRepo.save(sender);
             userRepo.save(receiver);
             
+            Notification existingNotification = notificationRepo.findBySenderAndReceiverAndRedirectUrl(sender, receiver, "/profile/" + sender.getId());
+
+            if (existingNotification == null) {
+
             Notification notification = new Notification();
             notification.setSender(sender);
             notification.setReceiver(receiver);
-            notification.setMessage(sender.getName() + "started following you");
+            notification.setMessage(sender.getName() + " started following you");
             notification.setTimestamp(LocalDateTime.now());
+            notification.setRedirectUrl("/profile/" + sender.getId()); // Example: /profile/123
             
             notificationServiceImpl.sendNotification(notification);
             notificationRepo.save(notification);
-            
+            }
             return null;
             
             
@@ -68,16 +73,21 @@ public class FollowServiceImpl implements FollowService {
         followRequest.setSentAt(LocalDateTime.now());
         followRequest.setStatus("Pending");
         
+        Notification existingNotification = notificationRepo.findBySenderAndReceiverAndRedirectUrl(sender, receiver, "/profile/" + sender.getId());
+
+        if (existingNotification == null) {
         Notification notification = new Notification();
         
         notification.setSender(sender);
         notification.setReceiver(receiver);
-        notification.setMessage(sender.getName() + "has requested to follow you");
+        notification.setMessage(sender.getName() + " has requested to follow you");
         notification.setTimestamp(LocalDateTime.now());
-        
+        notification.setRedirectUrl("/profile/" + sender.getId()); // Example: /profile/123
+        notification.setSenderProfilePicUrl(sender.getProfilepic()); // Assuming you have a method like getProfilePictureUrl() in your User entity
+
         notificationServiceImpl.sendNotification(notification);
         notificationRepo.save(notification);
-        
+        }
         return followRequestRepo.save(followRequest);
     }
 
@@ -100,14 +110,22 @@ public class FollowServiceImpl implements FollowService {
         userRepo.save(receiver);
         followRequestRepo.save(followRequest);
         
+     // Check for duplicate notification before sending
+        Notification existingNotification = notificationRepo.findBySenderAndReceiverAndRedirectUrl(receiver, sender, "/profile/" + receiver.getId());
+
+        if (existingNotification == null) {
+        
         Notification notification = new Notification();
         notification.setSender(receiver);
         notification.setReceiver(sender);
-        notification.setMessage(receiver.getName() + "has accepted your follow request");
+        notification.setMessage(receiver.getName() + " has accepted your follow request");
         notification.setTimestamp(LocalDateTime.now());
-        
+        notification.setRedirectUrl("/profile/" + receiver.getId()); // Example: /profile/123
+        notification.setSenderProfilePicUrl(receiver.getProfilepic()); // Assuming you have a method like getProfilePictureUrl() in your User entity
+
         notificationServiceImpl.sendNotification(notification);
         notificationRepo.save(notification);     
+        }
 	}
 
 	@Override
@@ -118,15 +136,23 @@ public class FollowServiceImpl implements FollowService {
 	        followRequest.setStatus("Rejected");
 	        followRequestRepo.save(followRequest);
 	        
+	     // Check for duplicate notification before sending
+	        Notification existingNotification = notificationRepo.findBySenderAndReceiverAndRedirectUrl(followRequest.getReceiver(), followRequest.getSender(), "/profile/" + followRequest.getReceiver().getId());
+
+	        if (existingNotification == null) {
+	        
 	        Notification notification = new Notification();
 	        
 	        notification.setSender(followRequest.getReceiver());
 	        notification.setReceiver(followRequest.getSender());
-	        notification.setMessage(followRequest.getReceiver().getName() + "has declined your follow request");
+	        notification.setMessage(followRequest.getReceiver().getName() + " has declined your follow request");
 	        notification.setTimestamp(LocalDateTime.now());
-	        
+	        notification.setSenderProfilePicUrl(followRequest.getReceiver().getProfilepic()); // Assuming you have a method like getProfilePictureUrl() in your User entity
+	        notification.setRedirectUrl("/profile/" + followRequest.getReceiver().getId());
+	        notification.setSenderProfilePicUrl(followRequest.getReceiver().getProfilepic());
 	        notificationServiceImpl.sendNotification(notification);
 	        notificationRepo.save(notification);
+	        }
 	        
 	}
 

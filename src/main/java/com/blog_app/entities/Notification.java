@@ -53,4 +53,10 @@ public class Notification {
 
 	    @Column(name = "comment_id")
 	    private Integer commentId;
+	    
+	    private String redirectUrl; // URL to redirect to when the notification is clicked
+	    
+	    private String senderProfilePicUrl; // Store the URL of the sender's profile picture
+
+
 	}

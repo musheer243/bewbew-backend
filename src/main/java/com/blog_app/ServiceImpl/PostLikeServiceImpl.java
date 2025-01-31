@@ -112,6 +112,12 @@ public class PostLikeServiceImpl implements PostLikeService{
 		        
 			if (post.getUser()!=user) {
 			
+				// Check if a similar notification already exists
+			    Notification existingNotification = notificationRepo.findBySenderAndReceiverAndPostIdAndRedirectUrl(
+			        user, post.getUser(), post.getPostId(), "/api/post/view/" + post.getPostId());
+			    
+			    if (existingNotification == null) {
+
 //			// Create a notification for the post owner
 		    Notification notification = new Notification();
 		    notification.setSender(user);
@@ -119,10 +125,12 @@ public class PostLikeServiceImpl implements PostLikeService{
 		    notification.setMessage(user.getName() + " has liked your post.");
 		    notification.setPostId(post.getPostId());
 		    notification.setTimestamp(LocalDateTime.now());
-
+		    notification.setRedirectUrl("/api/post/view/" + post.getPostId());
+		    notification.setSenderProfilePicUrl(user.getProfilepic());
 		    notificationServiceImpl.sendNotification(notification);
 
 		    notificationRepo.save(notification);
+			}
 			}
             return "Post liked successfully!";
 
