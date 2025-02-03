@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.blog_app.ServiceImpl.AiChatServiceImpl;
+
 import reactor.core.publisher.Flux;
 
 @RestController
@@ -19,6 +21,9 @@ import reactor.core.publisher.Flux;
 public class ChatController {
 
     private final OllamaChatModel chatModel;
+    
+    @Autowired
+    private AiChatServiceImpl aiChatServiceImpl;
 
     @Autowired
     public ChatController(OllamaChatModel chatModel) {
@@ -37,4 +42,8 @@ public class ChatController {
 //        //return chatModel.stream(prompt);
 //    }
 
+    @GetMapping("/ai/generateStream")
+   	public Flux<String> generateStream(@RequestParam(value = "message", defaultValue = "hii") String message) {
+    		return this.aiChatServiceImpl.streamResponse(message);
+       }
 }

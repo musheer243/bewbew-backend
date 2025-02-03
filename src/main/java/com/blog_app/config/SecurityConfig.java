@@ -6,6 +6,8 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -58,7 +60,7 @@ public class SecurityConfig {
 	private JwtAuthenticationFilter jwtAuthenticationFilter;
 	 
 	public static final String[] PUBLIC_URLS = {
-			"/api/v1/auth/login","/api/v1/auth/resend-otp","/api/v1/auth/edit-email","/api/v1/oauth2/**","/api/v1/oauth2/google/callback","/api/v1/auth/register","/api/v1/auth/verify-otp","/api/v1/auth/upload-profile-pic", "/v3/api-docs/**","/ws/**" ,"/v2/api-docs", "/swagger-resources/**", "/swagger-ui/**", "/webjars/**","/api/password/**","/api/post/view/**"
+			"/api/v1/auth/login","/api/v1/auth/resend-otp","/api/v1/auth/edit-email", "/api/ai/generateStream","/api/v1/oauth2/**","/api/v1/oauth2/google/callback","/api/v1/auth/register","/api/v1/auth/verify-otp","/api/v1/auth/upload-profile-pic", "/v3/api-docs/**","/ws/**" ,"/v2/api-docs", "/swagger-resources/**", "/swagger-ui/**", "/webjars/**","/api/password/**","/api/post/view/**"
 	};
 	
 	@Bean
@@ -70,7 +72,7 @@ public class SecurityConfig {
         .cors(cors -> cors.configurationSource(corsConfigurationSource()))  // Add CORS configuration
         .authorizeHttpRequests((authz) -> authz
             .requestMatchers(PUBLIC_URLS).permitAll()
-            .requestMatchers("/ws/**").authenticated()// added dis for authentication the websocket connection
+//            .requestMatchers("/ws/**").authenticated()// added dis for authentication the websocket connection
             .anyRequest().authenticated())
         .exceptionHandling(exceptionHandling -> exceptionHandling.authenticationEntryPoint(jwtAuthenticationEntryPoint))
         .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -140,18 +142,19 @@ public class SecurityConfig {
 	    bean.setOrder(0);
 	    return bean;
 	}
-	 @Bean
-	    public CorsConfigurationSource corsConfigurationSource() {
-	        CorsConfiguration configuration = new CorsConfiguration();
-	        configuration.addAllowedOrigin("http://localhost:3000");  // Frontend URL
-	        configuration.addAllowedMethod("*");
-	        configuration.addAllowedHeader("*");
-	        configuration.setAllowCredentials(true);
+	@Bean
+	public CorsConfigurationSource corsConfigurationSource() {
+	    CorsConfiguration configuration = new CorsConfiguration();
+	    // Use allowedOriginPatterns instead of allowedOrigins
+	    configuration.setAllowedOriginPatterns(List.of("http://localhost:3000")); // Explicitly list allowed origins
+	    configuration.addAllowedMethod("*"); // Allow all HTTP methods
+	    configuration.addAllowedHeader("*"); // Allow all headers
+	    configuration.setAllowCredentials(true); // Allow credentials
 
-	        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-	        source.registerCorsConfiguration("/**", configuration);
-	        return source;
-	    }
+	    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+	    source.registerCorsConfiguration("/**", configuration); // Apply CORS configuration to all paths
+	    return source;
+	}
 	 
 	 @Bean
 	    public HttpFirewall allowUrlEncodedSlashHttpFirewall() {
