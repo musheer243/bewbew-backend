@@ -34,6 +34,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter{
 	@Override
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
 			throws ServletException, IOException {
+		
+//		 // Skip token validation for streaming endpoints after the initial request
+//	    if (request.getRequestURI().startsWith("/api/ai/generateStream") && !isInitialRequest(request)) {
+//	        filterChain.doFilter(request, response);
+//	        return;
+//	    }
 		 
 		String requestToken = request.getHeader("Authorization");
 		 
@@ -101,6 +107,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter{
 
 
 	}
+	
+//	private boolean isInitialRequest(HttpServletRequest request) {
+//	    // Check if this is the initial request (not a chunk of a streamed response)
+//	    return request.getHeader("Authorization") != null;
+//	}
 
 }
 

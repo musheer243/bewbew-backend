@@ -37,48 +37,63 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
-        config.enableSimpleBroker("/topic", "/queue");
+        config.enableSimpleBroker("/queue", "/topic");
         config.setApplicationDestinationPrefixes("/app");
         config.setUserDestinationPrefix("/user");
     }
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint("/ws").setAllowedOriginPatterns("http://localhost:3000"); // Use allowedOriginPatterns
+        registry.addEndpoint("/ws").setAllowedOriginPatterns("http://localhost:3000")
+        .withSockJS(); // Use allowedOriginPatterns
     }
-
+    
     @Override
     public void configureClientInboundChannel(ChannelRegistration registration) {
         registration.interceptors(new ChannelInterceptor() {
             @Override
             public Message<?> preSend(Message<?> message, MessageChannel channel) {
-                StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
-                if (StompCommand.CONNECT.equals(accessor.getCommand())) {
-                    String token = accessor.getFirstNativeHeader("Authorization");
-                    System.out.println("WebSocket Headers: " + accessor.toMap()); // Log headers
-                    if (token != null && token.startsWith("Bearer ")) {
-                        token = token.substring(7);
-                        System.out.println("Token received: " + token); // Log token
-                        String username = jwtTokenHelper.getUsernameFromToken(token);
-                        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                            System.out.println("Username extracted: " + username); // Log username
+                StompHeaderAccessor accessor = 
+                    MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
+                
+                if (accessor != null && StompCommand.CONNECT.equals(accessor.getCommand())) {
+                    // 1. Check STOMP headers first
+                    String authHeader = accessor.getFirstNativeHeader("Authorization");
+                    
+                    // 2. If Authorization header is missing, check query parameters
+                    if ((authHeader == null || !authHeader.startsWith("Bearer "))) {
+                        // Extract token from the SockJS URL query parameters
+                        String query = accessor.getNativeHeader("token").get(0); // Get the first token value
+                        if (query != null && !query.isEmpty()) {
+                            authHeader = "Bearer " + query;
+                        }
+                    }
+
+                    // 3. Validate the token
+                    if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                        String token = authHeader.substring(7); // Remove "Bearer " prefix
+                        try {
+                            String username = jwtTokenHelper.getUsernameFromToken(token);
                             UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+                            
                             if (jwtTokenHelper.validateToken(token, userDetails)) {
-                                System.out.println("Token validated for user: " + username); // Log successful validation
-                                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                                        userDetails, null, userDetails.getAuthorities());
-                                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails((HttpServletRequest) accessor.getUser()));
+                                // Create authentication object
+                                UsernamePasswordAuthenticationToken authentication = 
+                                    new UsernamePasswordAuthenticationToken(
+                                        userDetails, null, userDetails.getAuthorities()
+                                    );
+                                // Set the authentication in the SecurityContext
                                 SecurityContextHolder.getContext().setAuthentication(authentication);
                                 accessor.setUser(authentication);
-                                System.out.println("User authenticated: " + username); // Log successful authentication
+                                System.out.println("✅ WebSocket authenticated for user: " + username);
                             } else {
-                                System.out.println("Invalid token for user: " + username); // Log invalid token
+                                System.err.println("❌ Invalid token for WebSocket connection");
                             }
-                        } else {
-                            System.out.println("Username is null or user is already authenticated"); // Log username issue
+                        } catch (Exception e) {
+                            System.err.println("❌ Error validating WebSocket token: " + e.getMessage());
                         }
                     } else {
-                        System.out.println("Authorization header is missing or invalid"); // Log missing/invalid header
+                        System.err.println("❌ No valid token found in WebSocket handshake");
                     }
                 }
                 return message;

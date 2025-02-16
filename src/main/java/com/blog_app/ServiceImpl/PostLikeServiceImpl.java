@@ -127,9 +127,10 @@ public class PostLikeServiceImpl implements PostLikeService{
 		    notification.setTimestamp(LocalDateTime.now());
 		    notification.setRedirectUrl("/api/post/view/" + post.getPostId());
 		    notification.setSenderProfilePicUrl(user.getProfilepic());
-		    notificationServiceImpl.sendNotification(notification);
+		    Notification save = notificationRepo.save(notification);
 
-		    notificationRepo.save(notification);
+		    notificationServiceImpl.sendNotification(save);
+
 			}
 			}
             return "Post liked successfully!";

@@ -53,12 +53,21 @@ public class ChattingController {
 			Message message = new Message();
 			message.setSender(sender);
 			message.setReceiver(reciever);
-			message.setContent(message.getContent());
+			message.setContent(messageDto.getContent());
 			message.setSentAt(LocalDateTime.now());
+			message.setSenderProfilePic(sender.getProfilepic());
 			
-			messageRepo.save(message);
+			Message savedMessage = messageRepo.save(message);
 			
-			// 🔇 Muted chat check (Stop sending notifications if muted)
+			MessageDto responseDto = new MessageDto();
+			responseDto.setId(savedMessage.getId());
+		    responseDto.setContent(savedMessage.getContent());
+		    responseDto.setSenderId(savedMessage.getSender().getId());
+		    responseDto.setReceiverId(savedMessage.getReceiver().getId());
+		    responseDto.setSenderProfilePic(savedMessage.getSenderProfilePic());
+		    responseDto.setSentAt(savedMessage.getSentAt());			
+			
+						// 🔇 Muted chat check (Stop sending notifications if muted)
 	        Optional<MutedChat> muted = mutedChatRepo.findByUserAndMutedUser(reciever, sender);
 	        if (muted.isPresent()) {
 	            System.out.println("Notification skipped: Receiver has muted the sender.");
@@ -66,9 +75,9 @@ public class ChattingController {
 	        }
 			
 			messagingTemplate.convertAndSendToUser(
-					String.valueOf(reciever.getId()),
+					reciever.getUsername(),
 					"/queue/messages",
-					messageDto
+					responseDto
 					);	
 		}
 	}

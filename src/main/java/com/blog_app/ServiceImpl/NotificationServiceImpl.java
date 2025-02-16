@@ -17,13 +17,13 @@ public class NotificationServiceImpl {
     }
 
     public void sendNotification(Notification notification) {
-        // Sending notification to the user's WebSocket channel
-       // System.out.println("Sending notification to: " + notification.getReceiver().getUsername());
-    	//messagingTemplate.convertAndSendToUser("bilal_khan", "/topic/notifications", "Test notification");
+       
+    	String username = notification.getReceiver().getUsername();
+    	messagingTemplate.convertAndSendToUser(username, "/queue/notifications", notification);
 
-        messagingTemplate.convertAndSendToUser(notification.getReceiver().getName(), "/topic/notifications", notification
-        );
-        System.out.println("Sending notification to: " + notification.getReceiver().getName());
+        System.out.println("Sent notification to user ID: " + username);
+        System.out.println("Notification data: " + notification);
+
 
     }
 }

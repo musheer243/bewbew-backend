@@ -51,4 +51,7 @@ public class Message {
 	    @ElementCollection(fetch = FetchType.LAZY)
 	    @CollectionTable(name = "deleted_messages", joinColumns = @JoinColumn(name = "message_id"))
 	    private Set<Integer> deletedFor = new HashSet<>();
+	    
+	    @Column(name = "sender_profile_pic")
+	    private String senderProfilePic;
 }

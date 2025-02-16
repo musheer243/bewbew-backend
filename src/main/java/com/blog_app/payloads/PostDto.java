@@ -34,6 +34,9 @@ public class PostDto {
 	
 	private List<String> mediaFileNames;
 	
+    private List<String> keptOldLinks; // <--- Add this
+
+	
 	private LocalDateTime addedDate;
 	
 	private int likeCount = 0;

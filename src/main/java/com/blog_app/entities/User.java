@@ -13,6 +13,8 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -96,6 +98,7 @@ public class User implements UserDetails {
 	    @JoinTable(name = "followers",
 	            joinColumns = @JoinColumn(name = "user_id"),
 	            inverseJoinColumns = @JoinColumn(name = "follower_id"))
+	    @JsonIgnore
 	    private Set<User> followers = new HashSet<>();
 
 	    // Following other users
@@ -103,12 +106,14 @@ public class User implements UserDetails {
 	    @JoinTable(name = "following",
 	            joinColumns = @JoinColumn(name = "follower_id"),
 	            inverseJoinColumns = @JoinColumn(name = "user_id"))
+	    @JsonIgnore
 	    private Set<User> following = new HashSet<>();
 	    
 	    @ManyToMany(fetch = FetchType.LAZY)
 	    @JoinTable(name = "close_friends",
 	            joinColumns = @JoinColumn(name = "user_id"),
 	            inverseJoinColumns = @JoinColumn(name = "close_friend_id"))
+	    @JsonIgnore
 	    private Set<User> closeFriends = new HashSet<>();
 
 	    

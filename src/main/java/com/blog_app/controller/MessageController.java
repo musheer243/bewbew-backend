@@ -1,10 +1,18 @@
 package com.blog_app.controller;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
+import org.springframework.data.domain.Sort;
 
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -13,12 +21,15 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.blog_app.entities.BlockedUser;
 import com.blog_app.entities.Message;
 import com.blog_app.entities.MutedChat;
 import com.blog_app.entities.User;
+import com.blog_app.payloads.MessageDto;
+import com.blog_app.payloads.UserDto;
 import com.blog_app.repositories.BlockedUserRepo;
 import com.blog_app.repositories.MessageRepo;
 import com.blog_app.repositories.MutedChatRepo;
@@ -27,6 +38,9 @@ import com.blog_app.repositories.UserRepo;
 @RestController
 @RequestMapping("/api/v1/messages")
 public class MessageController {
+	
+	@Autowired
+	private ModelMapper modelMapper;
 
 	@Autowired
 	private MessageRepo messageRepo;
@@ -39,21 +53,96 @@ public class MessageController {
 	
 	@Autowired
 	private MutedChatRepo mutedChatRepo;
+
+	//to get users recent chats
+	//to get users recent chats
+	@GetMapping("/{userId}/chats")
+	public ResponseEntity<List<UserDto>> getRecentChats(@PathVariable int userId) {
+	    Optional<User> user = userRepo.findById(userId);
+	    if (user.isEmpty()) return ResponseEntity.notFound().build();
+	    
+	    List<Message> messages = messageRepo.findDistinctBySenderOrReceiver(user.get(), user.get());
+	    Set<User> chatPartners = new HashSet<>();
+	    
+	    for (Message message : messages) {
+	        if (message.getSender().getId() != userId) 
+	            chatPartners.add(message.getSender());
+	        if (message.getReceiver().getId() != userId)
+	            chatPartners.add(message.getReceiver());
+	    }
+	    
+	    // Convert to DTOs using model mapper
+	    List<UserDto> userDtos = chatPartners.stream()
+	        .map(chatPartner -> modelMapper.map(chatPartner, UserDto.class))
+	        .collect(Collectors.toList());
+	    
+	    return ResponseEntity.ok(userDtos);
+	}
 	
 	//get chat history
 	@GetMapping("/{userId1}/{userId2}")
-    public List<Message> getChatHistory(@PathVariable int userId1, @PathVariable int userId2) {
-        Optional<User> user1 = userRepo.findById(userId1);
-        Optional<User> user2 = userRepo.findById(userId2);
+	public ResponseEntity<List<MessageDto>> getChatHistory(@PathVariable int userId1, @PathVariable int userId2) {
+	    Optional<User> user1 = userRepo.findById(userId1);
+	    Optional<User> user2 = userRepo.findById(userId2);
 
-        if (user1.isPresent() && user2.isPresent()) {
-            return messageRepo.findBySenderAndReceiverOrReceiverAndSender(user1.get(), user2.get(), user1.get(), user2.get())
-            		.stream().filter(message -> !message.getDeletedFor().contains(user1)) // Exclude deleted messages
-            		.collect(Collectors.toList());
-        }
+	    if (user1.isPresent() && user2.isPresent()) {
+	        List<Message> messages = messageRepo.findBySenderAndReceiverOrReceiverAndSender(
+	                user1.get(), user2.get(), user1.get(), user2.get()
+	        );
 
-        return List.of();
-    }
+	        // Convert to DTOs and exclude messages marked as deleted
+	        List<MessageDto> messageDtos = messages.stream()
+	                .filter(message -> !message.getDeletedFor().contains(user1.get().getId())) // Exclude deleted messages
+	                .map(message -> {
+	                    MessageDto dto = new MessageDto();
+	                    dto.setSenderId(message.getSender().getId());
+	                    dto.setReceiverId(message.getReceiver().getId());
+	                    dto.setContent(message.getContent());
+	                    dto.setSentAt(message.getSentAt());
+	                    dto.setSenderProfilePic(message.getSender().getProfilepic());
+
+	                    return dto;
+	                })
+	                .collect(Collectors.toList());
+
+	        return ResponseEntity.ok(messageDtos);
+	    }
+
+	    return ResponseEntity.notFound().build();
+	}
+	
+	//get chat history in pageable format
+	@GetMapping("/page/{userId1}/{userId2}")
+	public ResponseEntity<Page<MessageDto>> getChatHistory(
+	        @PathVariable int userId1, 
+	        @PathVariable int userId2,
+	        @RequestParam(defaultValue = "0") int page,
+	        @RequestParam(defaultValue = "20") int size) {
+	    
+	    Optional<User> user1 = userRepo.findById(userId1);
+	    Optional<User> user2 = userRepo.findById(userId2);
+
+	    if (user1.isPresent() && user2.isPresent()) {
+	        Pageable pageable = PageRequest.of(page, size, Sort.by("sentAt").descending());
+	        Page<Message> messages = messageRepo.findChatHistory(user1.get(), user2.get(), pageable);
+
+	        Page<MessageDto> messageDtos = messages.map(message -> {
+	            MessageDto dto = new MessageDto();
+	            dto.setSenderId(message.getSender().getId());
+	            dto.setReceiverId(message.getReceiver().getId());
+	            dto.setContent(message.getContent());
+	            dto.setSentAt(message.getSentAt());
+	            dto.setSenderProfilePic(message.getSender().getProfilepic());
+	            return dto;
+	        });
+
+	        return ResponseEntity.ok(messageDtos);
+	    }
+
+	    return ResponseEntity.notFound().build();
+	}
+
+
 	
 	//delete a single msg in chat
 	@DeleteMapping("/delete/{messageId}")

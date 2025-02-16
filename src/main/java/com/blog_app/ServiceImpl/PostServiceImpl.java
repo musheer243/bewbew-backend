@@ -316,29 +316,59 @@ public class PostServiceImpl implements PostService {
 
 
 	@Override
-	public PostDto updatePostWithMedia(Integer postId, String postDto, List<MultipartFile> files) throws IOException {
-		Post post = this.postRepo.findById(postId).orElseThrow(()-> new ResourceNotFoundException("post", "postId", postId));
-		
-		PostDto value = this.objectMapper.readValue(postDto, PostDto.class);
-		
-		 if (value.getTitle() != null && !value.getTitle().isEmpty()) {
-		        post.setTitle(value.getTitle());
-		    }
+	public PostDto updatePostWithMedia(Integer postId, String postDtoJson, List<MultipartFile> newFiles) throws IOException {
+	    Post post = postRepo.findById(postId)
+	        .orElseThrow(() -> new ResourceNotFoundException("post", "postId", postId));
 
-		    if (value.getContent() != null && !value.getContent().isEmpty()) {
-		        post.setContent(value.getContent());
-		    }
-		    
-		    if (files != null && !files.isEmpty()) {
-		        List<String> uploadedFiles = this.fIleServiceMedia.uploadMedia(files);
-		        post.setMediaFileNames(uploadedFiles);  // Set uploaded media files
-		    }
-		    
-		    
-		    Post save = this.postRepo.save(post);
-		    
-		    
-		return this.modelMapper.map(save, PostDto.class);
+	    PostDto dto = objectMapper.readValue(postDtoJson, PostDto.class);
+
+	    // Update basics
+	    if (dto.getTitle() != null) post.setTitle(dto.getTitle());
+	    if (dto.getContent() != null) post.setContent(dto.getContent());
+	    post.setCloseFriendsOnly(dto.isCloseFriendsOnly());
+
+	    // Suppose we store which old links the user wants to keep
+	    List<String> keptOldLinks = dto.getKeptOldLinks(); // new field in PostDto
+	    if (keptOldLinks == null) {
+	        keptOldLinks = new ArrayList<>();
+	    }
+	    
+	 // Create a final copy for the lambda
+	    final List<String> finalKeptOldLinks = keptOldLinks;
+
+	    // existing list from DB
+	    List<String> current = post.getMediaFileNames();
+	    if (current == null) {
+	        current = new ArrayList<>();
+	    }
+	    
+	 // 5) Find which old links the user is removing
+	    //    (i.e., in currentMedia but NOT in keptOldLinks)
+	    List<String> removedLinks = current.stream()
+	        .filter(oldLink -> !finalKeptOldLinks.contains(oldLink))
+	        .toList();
+
+	    // remove any old link not in keptOldLinks
+	    // optional: physically remove from S3 if you want
+	    List<String> finalList = current.stream()
+	        .filter(keptOldLinks::contains)
+	        .collect(Collectors.toList());
+	    
+	    //    (so you don't keep unused media in your storage)
+	    if (!removedLinks.isEmpty()) {
+	        this.fIleServiceMedia.deletePostFiles(removedLinks);
+	    }
+
+	    // now handle new files
+	    if (newFiles != null && !newFiles.isEmpty()) {
+	        List<String> uploaded = fIleServiceMedia.uploadMedia(newFiles);
+	        finalList.addAll(uploaded);
+	    }
+
+	    post.setMediaFileNames(finalList);
+
+	    Post saved = postRepo.save(post);
+	    return modelMapper.map(saved, PostDto.class);
 	}
 
 

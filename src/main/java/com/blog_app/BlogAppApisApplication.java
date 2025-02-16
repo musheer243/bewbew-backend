@@ -25,6 +25,7 @@ public class BlogAppApisApplication implements CommandLineRunner{
 	@Autowired
 	private PasswordEncoder passwordEncoder;
 	
+
 	@Autowired
 	private RoleRepo roleRepo;
 
