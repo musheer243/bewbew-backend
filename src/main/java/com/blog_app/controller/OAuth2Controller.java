@@ -2,6 +2,7 @@ package com.blog_app.controller;
 
 import java.io.Console;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -144,7 +145,7 @@ public class OAuth2Controller {
 	        user.setEmail(email);
 	        user.setName(name);
 	        user.setProfilepic(profilePic);
-	        user.setJoiningdate(LocalDateTime.now());
+	        user.setJoiningdate(LocalDateTime.now(ZoneId.of("Asia/Kolkata")));
 	        user.setVerified(true); // Since Google verifies email
 	        user.setTotalPosts(0);
 	        user.setTotalLikes(0);

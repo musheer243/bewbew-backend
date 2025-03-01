@@ -14,5 +14,5 @@ public class MessageDto {
     private String content;
     private LocalDateTime sentAt; // Timestamp of the message
     private String senderProfilePic;
-
+    private boolean isRead = false;
 }

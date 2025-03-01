@@ -2,6 +2,7 @@ package com.blog_app.controller;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -27,10 +28,13 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.blog_app.entities.FollowRequest;
 import com.blog_app.entities.User;
+import com.blog_app.exceptions.ResourceNotFoundException;
 import com.blog_app.payloads.ApiResponse;
 import com.blog_app.payloads.PasswordUpdateDto;
 import com.blog_app.payloads.UserDto;
+import com.blog_app.repositories.FollowRequestRepo;
 import com.blog_app.repositories.UserRepo;
 import com.blog_app.services.EmailService;
 import com.blog_app.services.FileService;
@@ -61,6 +65,9 @@ public class UserController {
 	
 	@Autowired
 	private UserRepo userRepo;
+	
+	@Autowired
+	private FollowRequestRepo followRequestRepo;
 
 
 	
@@ -77,7 +84,7 @@ public class UserController {
 	    return ResponseEntity.ok(updatedUser);
 	}
 	
-	
+	//***
 	//update user password
 	@PutMapping("/update-password")
     public ResponseEntity<ApiResponse> updatePassword(@RequestBody PasswordUpdateDto passwordUpdateDto) {
@@ -109,7 +116,7 @@ public class UserController {
 	}
 	
 	//Single user
-	
+	//***
 	@GetMapping("/{userId}")
 	public ResponseEntity<UserDto> getSingleUser(@PathVariable Integer userId){
 		return ResponseEntity.ok(this.userService.getUserDtoById(userId));      //Used getUserDtoById instead of getUserById
@@ -179,6 +186,7 @@ public class UserController {
 			}
 
 
+			//***
 			@PutMapping("/update-preference")
 		    public ResponseEntity<String> updateUserPreference(
 		            @RequestParam("email") String email,
@@ -192,7 +200,7 @@ public class UserController {
 		        }
 		    }
 			
-			
+			//***
 			//search user
 			@GetMapping("/search/{name}")
 			public ResponseEntity<List<UserDto>> searchUser(@PathVariable String name){
@@ -200,6 +208,7 @@ public class UserController {
 				return new ResponseEntity<List<UserDto>>(searchedUser,HttpStatus.OK);
 			}
 			
+			//***
 			@PostMapping("/{userId}/toggle-privacy")
 			public ResponseEntity<String> toggleAccountPrivacy(@PathVariable int userId){
 				this.userService.toggleAccountPrivacy(userId);
@@ -219,6 +228,62 @@ public class UserController {
 		    public ResponseEntity<Set<UserDto>> getFollowing(@PathVariable("userId") int userId) {
 		        Set<UserDto> following = userService.getFollowing(userId);
 		        return ResponseEntity.ok(following);
+		    }
+		    
+		    //no-need
+		    //api tp check whether a user is following the user
+		    @GetMapping("/{userId}/is-followed")
+		    public ResponseEntity<Map<String, Boolean>> isUserFollowed(@PathVariable int userId, @RequestParam int followerid){
+		    	boolean isFollowed = userService.isUserFollowed(userId, followerid);
+		    	Map<String, Boolean> response = new HashMap<>();
+		    	response.put("isFollowed", isFollowed);
+		    	return ResponseEntity.ok(response);
+		    }
+
+		    //***
+		    @GetMapping("/{userId}/follow-status")
+		    public ResponseEntity<Map<String, Object>> getFollowStatus(
+		            @PathVariable int userId,
+		            @RequestParam("viewerId") int viewerId) {
+		        
+		        // 1) Fetch the main user (the profile being viewed)
+		        User user = userRepo.findById(userId)
+		                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+		        
+		        // 2) Fetch the viewer (the logged-in user who is viewing the profile)
+		        User viewer = userRepo.findById(viewerId)
+		                .orElseThrow(() -> new ResourceNotFoundException("User", "id", viewerId));
+
+		        // 3) Check if the viewer is already following the user
+		        boolean isFollowed = user.getFollowers()
+		                                 .stream()
+		                                 .anyMatch(f -> f.getId() == viewerId);
+
+		        // 4) If not followed, check if there's a pending follow request 
+		        //    from viewer -> user
+		        FollowRequest fr = followRequestRepo
+		            .findBySenderIdAndReceiverIdAndStatus(viewerId, userId, "Pending");
+		        boolean isRequested = (fr != null);
+
+		        // 5) Construct a response map with the follow status
+		        //    - "followed"   -> user is already followed
+		        //    - "requested"  -> follow request is pending
+		        //    - "none"       -> not following, no pending request
+		        String followStatus;
+		        if (isFollowed) {
+		            followStatus = "followed";
+		        } else if (isRequested) {
+		            followStatus = "requested";
+		        } else {
+		            followStatus = "none";
+		        }
+
+		        // 6) Also indicate whether the user's profile is private
+		        Map<String, Object> response = new HashMap<>();
+		        response.put("followStatus", followStatus);
+//		        response.put("isPrivate", user.isPrivate());  // e.g., true/false
+
+		        return ResponseEntity.ok(response);
 		    }
 
 }

@@ -1,5 +1,7 @@
 package com.blog_app.services;
 
+import java.util.List;
+
 import com.blog_app.entities.FollowRequest;
 
 public interface FollowService {
@@ -13,4 +15,7 @@ public interface FollowService {
 	void removeFollower(int userId, int followerId);
 	
 	void unfollowUser(int userId, int followingId);
+	
+	List<FollowRequest> getAllReceivedRequests(int receiverId);
+
 }

@@ -1,6 +1,7 @@
 package com.blog_app.ServiceImpl;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -124,7 +125,7 @@ public class PostLikeServiceImpl implements PostLikeService{
 		    notification.setReceiver(post.getUser()); // The post owner
 		    notification.setMessage(user.getName() + " has liked your post.");
 		    notification.setPostId(post.getPostId());
-		    notification.setTimestamp(LocalDateTime.now());
+		    notification.setTimestamp(LocalDateTime.now(ZoneId.of("Asia/Kolkata")));
 		    notification.setRedirectUrl("/api/post/view/" + post.getPostId());
 		    notification.setSenderProfilePicUrl(user.getProfilepic());
 		    Notification save = notificationRepo.save(notification);

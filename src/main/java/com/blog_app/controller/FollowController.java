@@ -1,14 +1,19 @@
 package com.blog_app.controller;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.blog_app.entities.FollowRequest;
+import com.blog_app.payloads.FollowRequestDto;
 import com.blog_app.services.FollowService;
 
 @RestController
@@ -61,4 +66,28 @@ public class FollowController {
 	        followService.unfollowUser(userId, followingId);
 	        return ResponseEntity.ok("Unfollowed user successfully");
 }
+	    
+	    @GetMapping("/requests/received/{receiverId}")
+	    public ResponseEntity<List<FollowRequestDto>> getAllReceivedRequests(@PathVariable int receiverId) {
+	        // 1) Fetch from service
+	        List<FollowRequest> requests = followService.getAllReceivedRequests(receiverId);
+
+	        // 2) Convert to DTO
+	        List<FollowRequestDto> dtoList = requests.stream()
+	            .map(fr -> {
+	                FollowRequestDto dto = new FollowRequestDto();
+	                dto.setId(fr.getId());
+	                dto.setSenderId(fr.getSender().getId());
+	                dto.setSenderName(fr.getSender().getUsername());
+	                dto.setSenderProfilePic(fr.getSender().getProfilepic());
+	                dto.setReceiverId(fr.getReceiver().getId());
+	                dto.setSentAt(fr.getSentAt());
+	                dto.setStatus(fr.getStatus());
+	                dto.setRedirectUrl("/profile/" + fr.getSender().getId());
+	                return dto;
+	            })
+	            .collect(Collectors.toList());
+
+	        return ResponseEntity.ok(dtoList);
+	    }
 }

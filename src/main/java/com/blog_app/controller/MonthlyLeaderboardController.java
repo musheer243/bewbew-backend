@@ -1,6 +1,8 @@
 package com.blog_app.controller;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -30,7 +32,7 @@ public class MonthlyLeaderboardController {
 	@GetMapping("/leaderboard/monthly")
 	public ResponseEntity<List<MonthlyLeaderboardDto>> getMonthlyLeaderboard(){
 		 // Get the current month (first day)
-        LocalDate currentMonth = LocalDate.now().withDayOfMonth(1);
+        LocalDate currentMonth = LocalDate.now(ZoneId.of("Asia/Kolkata")).withDayOfMonth(1);
         
         List<MonthlyLeaderboard> top100ByMonthOrderByPostCountDesc = this.monthlyLeaderboardRepo.findTop100ByMonthOrderByPostCountDesc(currentMonth);
 
@@ -48,7 +50,7 @@ public class MonthlyLeaderboardController {
 			}
 
 			// Calculate the date for `monthsAgo` months before the current month
-			LocalDate targetMonth = LocalDate.now().minusMonths(monthsAgo).withDayOfMonth(1);
+			LocalDate targetMonth = LocalDate.now(ZoneId.of("Asia/Kolkata")).minusMonths(monthsAgo).withDayOfMonth(1);
 
 			// Fetch top 100 users for the specified month, ordered by post count
 			List<MonthlyLeaderboard> top100ByMonthOrderByPostCountDesc = 

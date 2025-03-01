@@ -1,6 +1,7 @@
 package com.blog_app.ServiceImpl;
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;import java.util.stream.Collector;
@@ -248,7 +249,7 @@ public class PostServiceImpl implements PostService {
 	        post.setAddedDate(value.getScheduledDate()); // Set scheduled date
 	        post.setPublished(false); // Set to unpublished if scheduled
 	    } else {
-	        post.setAddedDate(LocalDateTime.now()); // Set the current date if not scheduled
+	        post.setAddedDate(LocalDateTime.now(ZoneId.of("Asia/Kolkata"))); // Set the current date if not scheduled
 	        post.setPublished(true); // Immediately publish if no scheduled date
 	    }	
 	    post.setUser(user);
@@ -286,19 +287,22 @@ public class PostServiceImpl implements PostService {
 	        
 	        if (user.isPrivate()==false) {
 	        	 // Update Monthly Leaderboard
-		        this.monthlyLeaderboardService.updateMonthlyLeaderboard(user.getName());
+		        this.monthlyLeaderboardService.updateMonthlyLeaderboard(user.getUsername(), user.getProfilepic());
 		        
 		        if (!post.isCloseFriendsOnly()) {
 		        	for(User user1: user.getFollowers()) {
 		        	    Notification notification = new Notification();
 		        	    notification.setSender(user);
 		        	    notification.setReceiver(user1);
-		        	    notification.setMessage(user1.getName() + " has just uploaded a post");
-		        	    notification.setTimestamp(LocalDateTime.now());
+		        	    notification.setMessage(user.getName() + " has just uploaded a post");
+		        	    notification.setTimestamp(LocalDateTime.now(ZoneId.of("Asia/Kolkata")));
 		        	    notification.setPostId(newPost.getPostId());
+		        	    notification.setRedirectUrl("/api/post/view/" + newPost.getPostId());
+		        	    notification.setSenderProfilePicUrl(user.getProfilepic());
 		        	    
-		        	    notificationServiceImpl.sendNotification(notification);
-		        	    notificationRepo.save(notification);
+		        	    Notification save = notificationRepo.save(notification);
+		        	    notificationServiceImpl.sendNotification(save);
+
 		        	    }
 				}
 		        

@@ -61,5 +61,7 @@ public interface UserService {
 
 	User getLoggedInUser();
 
+	boolean isUserFollowed(int userId, int followerId);
+
 }
  

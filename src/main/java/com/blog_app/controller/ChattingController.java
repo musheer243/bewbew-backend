@@ -34,51 +34,87 @@ public class ChattingController {
 		this.mutedChatRepo = mutedChatRepo;
 	}
 	
-    @MessageMapping("/chat") // Client sends messages here
-	public void SendMessage(MessageDto messageDto) {
-		Optional<User> senderopt = userRepo.findById(messageDto.getSenderId());
-		Optional<User> recieveropt = userRepo.findById(messageDto.getReceiverId());
-		
-		if (senderopt.isPresent() && recieveropt.isPresent()) {
-			User sender = senderopt.get();
-			User reciever = recieveropt.get();
+	    @MessageMapping("/chat") // Client sends messages here
+		public void SendMessage(MessageDto messageDto) {
+			Optional<User> senderopt = userRepo.findById(messageDto.getSenderId());
+			Optional<User> recieveropt = userRepo.findById(messageDto.getReceiverId());
 			
-			 // 🛑 Check if the receiver has blocked the sender
-	        Optional<BlockedUser> blocked = blockedUserRepo.findByBlockedByAndBlockedUser(reciever, sender);
-	        if (blocked.isPresent()) {
-	            System.out.println("Message blocked: Sender is blocked by the receiver.");
-	            return; // Stop sending the message
-	        }
-			
-			Message message = new Message();
-			message.setSender(sender);
-			message.setReceiver(reciever);
-			message.setContent(messageDto.getContent());
-			message.setSentAt(LocalDateTime.now());
-			message.setSenderProfilePic(sender.getProfilepic());
-			
-			Message savedMessage = messageRepo.save(message);
-			
-			MessageDto responseDto = new MessageDto();
-			responseDto.setId(savedMessage.getId());
-		    responseDto.setContent(savedMessage.getContent());
-		    responseDto.setSenderId(savedMessage.getSender().getId());
-		    responseDto.setReceiverId(savedMessage.getReceiver().getId());
-		    responseDto.setSenderProfilePic(savedMessage.getSenderProfilePic());
-		    responseDto.setSentAt(savedMessage.getSentAt());			
-			
-						// 🔇 Muted chat check (Stop sending notifications if muted)
-	        Optional<MutedChat> muted = mutedChatRepo.findByUserAndMutedUser(reciever, sender);
-	        if (muted.isPresent()) {
-	            System.out.println("Notification skipped: Receiver has muted the sender.");
-	            return; // Do not send WebSocket notification
-	        }
-			
-			messagingTemplate.convertAndSendToUser(
-					reciever.getUsername(),
-					"/queue/messages",
-					responseDto
-					);	
+			if (senderopt.isPresent() && recieveropt.isPresent()) {
+				User sender = senderopt.get();
+				User reciever = recieveropt.get();
+				
+				 // 🛑 Check if the receiver has blocked the sender
+		        Optional<BlockedUser> blocked = blockedUserRepo.findByBlockedByAndBlockedUser(reciever, sender);
+		        if (blocked.isPresent()) {
+		            System.out.println("Message blocked: Sender is blocked by the receiver.");
+		            return; // Stop sending the message
+		        }
+				
+				Message message = new Message();
+				message.setSender(sender);
+				message.setReceiver(reciever);
+				message.setContent(messageDto.getContent());
+				message.setSentAt(LocalDateTime.now());
+				message.setSenderProfilePic(sender.getProfilepic());
+				
+				Message savedMessage = messageRepo.save(message);
+				
+				MessageDto responseDto = new MessageDto();
+				responseDto.setId(savedMessage.getId());
+			    responseDto.setContent(savedMessage.getContent());
+			    responseDto.setSenderId(savedMessage.getSender().getId());
+			    responseDto.setReceiverId(savedMessage.getReceiver().getId());
+			    responseDto.setSenderProfilePic(savedMessage.getSenderProfilePic());
+			    responseDto.setSentAt(savedMessage.getSentAt());			
+			    responseDto.setRead(savedMessage.isRead()); // Include read status
+
+							// 🔇 Muted chat check (Stop sending notifications if muted)
+		        Optional<MutedChat> muted = mutedChatRepo.findByUserAndMutedUser(reciever, sender);
+		        if (muted.isPresent()) {
+		            System.out.println("Notification skipped: Receiver has muted the sender.");
+		            return; // Do not send WebSocket notification
+		        }
+				
+				messagingTemplate.convertAndSendToUser(
+						reciever.getUsername(),
+						"/queue/messages",
+						responseDto
+						);
+				
+				// ...and also to the sender.
+		        messagingTemplate.convertAndSendToUser(
+		                sender.getUsername(),
+		                "/queue/messages",
+		                responseDto
+		        );
+			}
 		}
-	}
+	    
+	    @MessageMapping("/read")
+	    public void handleRead(MessageDto messageDto) {
+	        Optional<Message> messageOpt = messageRepo.findById(messageDto.getId());
+	        if(messageOpt.isPresent()){
+	            Message message = messageOpt.get();
+	            message.setRead(true);
+	            messageRepo.save(message);
+
+	            // Convert message to DTO (you might create a helper method for this)
+	            MessageDto updatedDto = new MessageDto();
+	            updatedDto.setId(message.getId());
+	            updatedDto.setSenderId(message.getSender().getId());
+	            updatedDto.setReceiverId(message.getReceiver().getId());
+	            updatedDto.setContent(message.getContent());
+	            updatedDto.setSentAt(message.getSentAt());
+	            updatedDto.setSenderProfilePic(message.getSenderProfilePic());
+	            updatedDto.setRead(true); // Set read status to true
+
+	            // Notify the sender that the message has been read
+	            messagingTemplate.convertAndSendToUser(
+	                message.getSender().getUsername(),
+	                "/queue/read-status",
+	                updatedDto
+	            );
+	        }
+	    }
+
 }

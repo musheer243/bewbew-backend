@@ -54,7 +54,7 @@ public class MessageController {
 	@Autowired
 	private MutedChatRepo mutedChatRepo;
 
-	//to get users recent chats
+	//***
 	//to get users recent chats
 	@GetMapping("/{userId}/chats")
 	public ResponseEntity<List<UserDto>> getRecentChats(@PathVariable int userId) {
@@ -79,6 +79,7 @@ public class MessageController {
 	    return ResponseEntity.ok(userDtos);
 	}
 	
+	//no-need
 	//get chat history
 	@GetMapping("/{userId1}/{userId2}")
 	public ResponseEntity<List<MessageDto>> getChatHistory(@PathVariable int userId1, @PathVariable int userId2) {
@@ -100,7 +101,7 @@ public class MessageController {
 	                    dto.setContent(message.getContent());
 	                    dto.setSentAt(message.getSentAt());
 	                    dto.setSenderProfilePic(message.getSender().getProfilepic());
-
+	                    dto.setRead(message.isRead()); // Add isRead status
 	                    return dto;
 	                })
 	                .collect(Collectors.toList());
@@ -111,6 +112,7 @@ public class MessageController {
 	    return ResponseEntity.notFound().build();
 	}
 	
+	//***
 	//get chat history in pageable format
 	@GetMapping("/page/{userId1}/{userId2}")
 	public ResponseEntity<Page<MessageDto>> getChatHistory(
@@ -128,11 +130,14 @@ public class MessageController {
 
 	        Page<MessageDto> messageDtos = messages.map(message -> {
 	            MessageDto dto = new MessageDto();
+	            dto.setId(message.getId());  // <--- Add this line!
 	            dto.setSenderId(message.getSender().getId());
 	            dto.setReceiverId(message.getReceiver().getId());
 	            dto.setContent(message.getContent());
 	            dto.setSentAt(message.getSentAt());
 	            dto.setSenderProfilePic(message.getSender().getProfilepic());
+	            dto.setRead(message.isRead()); // Add isRead status
+
 	            return dto;
 	        });
 

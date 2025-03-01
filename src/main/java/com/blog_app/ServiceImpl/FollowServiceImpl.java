@@ -1,6 +1,8 @@
 package com.blog_app.ServiceImpl;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -55,16 +57,26 @@ public class FollowServiceImpl implements FollowService {
             notification.setSender(sender);
             notification.setReceiver(receiver);
             notification.setMessage(sender.getName() + " started following you");
-            notification.setTimestamp(LocalDateTime.now());
+            notification.setTimestamp(LocalDateTime.now(ZoneId.of("Asia/Kolkata")));
             notification.setRedirectUrl("/profile/" + sender.getId()); // Example: /profile/123
-            
-            notificationServiceImpl.sendNotification(notification);
-            notificationRepo.save(notification);
+            notification.setSenderProfilePicUrl(sender.getProfilepic());
+            Notification save = notificationRepo.save(notification);
+            notificationServiceImpl.sendNotification(save);
+
             }
             return null;
             
             
 		}
+	    
+	 // 1) Check if a PENDING request from this sender -> receiver already exists
+	    FollowRequest existingFR = followRequestRepo
+	        .findBySenderIdAndReceiverIdAndStatus(senderId, receiverId, "Pending");
+
+	    if (existingFR != null) {
+	        // Already have a pending request, so no need to insert duplicates.
+	        return existingFR;
+	    }
 	    
 	    FollowRequest followRequest = new FollowRequest();
 	    
@@ -81,12 +93,13 @@ public class FollowServiceImpl implements FollowService {
         notification.setSender(sender);
         notification.setReceiver(receiver);
         notification.setMessage(sender.getName() + " has requested to follow you");
-        notification.setTimestamp(LocalDateTime.now());
+        notification.setTimestamp(LocalDateTime.now(ZoneId.of("Asia/Kolkata")));
         notification.setRedirectUrl("/profile/" + sender.getId()); // Example: /profile/123
         notification.setSenderProfilePicUrl(sender.getProfilepic()); // Assuming you have a method like getProfilePictureUrl() in your User entity
 
-        notificationServiceImpl.sendNotification(notification);
-        notificationRepo.save(notification);
+        Notification save = notificationRepo.save(notification);
+        notificationServiceImpl.sendNotification(save);
+
         }
         return followRequestRepo.save(followRequest);
     }
@@ -119,7 +132,7 @@ public class FollowServiceImpl implements FollowService {
         notification.setSender(receiver);
         notification.setReceiver(sender);
         notification.setMessage(receiver.getName() + " has accepted your follow request");
-        notification.setTimestamp(LocalDateTime.now());
+        notification.setTimestamp(LocalDateTime.now(ZoneId.of("Asia/Kolkata")));
         notification.setRedirectUrl("/profile/" + receiver.getId()); // Example: /profile/123
         notification.setSenderProfilePicUrl(receiver.getProfilepic()); // Assuming you have a method like getProfilePictureUrl() in your User entity
 
@@ -146,7 +159,7 @@ public class FollowServiceImpl implements FollowService {
 	        notification.setSender(followRequest.getReceiver());
 	        notification.setReceiver(followRequest.getSender());
 	        notification.setMessage(followRequest.getReceiver().getName() + " has declined your follow request");
-	        notification.setTimestamp(LocalDateTime.now());
+	        notification.setTimestamp(LocalDateTime.now(ZoneId.of("Asia/Kolkata")));
 	        notification.setSenderProfilePicUrl(followRequest.getReceiver().getProfilepic()); // Assuming you have a method like getProfilePictureUrl() in your User entity
 	        notification.setRedirectUrl("/profile/" + followRequest.getReceiver().getId());
 	        notification.setSenderProfilePicUrl(followRequest.getReceiver().getProfilepic());
@@ -200,4 +213,11 @@ public class FollowServiceImpl implements FollowService {
 		
 	}
 
+	@Override
+	public List<FollowRequest> getAllReceivedRequests(int receiverId) {
+		// TODO Auto-generated method stub
+	    return followRequestRepo.findAllByReceiverId(receiverId);
+	}
+	
+	
 }

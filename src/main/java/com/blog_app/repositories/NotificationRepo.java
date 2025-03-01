@@ -16,5 +16,7 @@ public interface NotificationRepo extends JpaRepository<Notification, Integer>{
 
 	Notification findBySenderAndReceiverAndRedirectUrl(User sender, User receiver, String string);
 
+	
+
 
 }

@@ -2,6 +2,8 @@ package com.blog_app.services;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+
 import com.blog_app.payloads.CommentDto;
 
 public interface CommentService {
@@ -15,7 +17,7 @@ public interface CommentService {
 	//delete
 	void deleteComment(Integer commentId);
 	
-	
-    List<CommentDto> getCommentsByPost(Integer postId);
+
+	Page<CommentDto> getCommentsByPost(Integer postId, int page, int size);
 
 }

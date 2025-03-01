@@ -3,6 +3,7 @@ package com.blog_app.controller;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.blog_app.entities.Comment;
@@ -61,10 +63,13 @@ public class CommentController {
 			}
 			
 			//get comment by post
-			 @GetMapping("/comment/post/{postId}")
-			    public ResponseEntity<List<CommentDto>> getCommentsByPost(@PathVariable Integer postId) {
-			        List<CommentDto> comments = commentService.getCommentsByPost(postId);
-			        return ResponseEntity.ok(comments);
-			    }
+			@GetMapping("/comments/post/{postId}")
+			public ResponseEntity<Page<CommentDto>> getCommentsByPost(
+			        @PathVariable Integer postId,
+			        @RequestParam(value = "page", defaultValue = "0") int page,
+			        @RequestParam(value = "size", defaultValue = "10") int size) {
+			    Page<CommentDto> comments = commentService.getCommentsByPost(postId, page, size);
+			    return ResponseEntity.ok(comments);
+			}
 	
 }

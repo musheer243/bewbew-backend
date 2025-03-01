@@ -3,6 +3,7 @@ package com.blog_app.ServiceImpl;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
@@ -212,7 +213,7 @@ public class UserServiceimpl implements UserService {
 		
 		user.setPassword(this.passwordEncoder.encode(password));
 		
-		user.setJoiningdate(LocalDateTime.now());
+		user.setJoiningdate(LocalDateTime.now(ZoneId.of("Asia/Kolkata")));
 		
         user.setVerified(true); // Mark user as verified
 
@@ -375,6 +376,14 @@ public class UserServiceimpl implements UserService {
 			return true;
 		}
 		return false;
+	}
+	
+	//method to check whether a user is following a user
+	@Override
+	public boolean isUserFollowed(int userId, int followerId) {
+		User user = this.userRepo.findById(userId).orElseThrow(()-> new ResourceNotFoundException("user", "userId", userId));
+		
+		return user.getFollowers().stream().anyMatch(follower -> follower.getId() == followerId);
 	}
 }
 	

@@ -1,14 +1,19 @@
 package com.blog_app.ServiceImpl;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 import org.modelmapper.ModelMapper;
 import org.modelmapper.internal.bytebuddy.implementation.bytecode.Throw;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import com.blog_app.entities.Comment;
@@ -54,7 +59,7 @@ public class CommentServiceimpl implements CommentService {
 		Comment comment = this.modelMapper.map(commentDto, Comment.class);
 		comment.setUser(user);
 		comment.setPost(post);
-		comment.setDate(LocalDateTime.now());
+	    comment.setDate(LocalDateTime.now(ZoneId.of("Asia/Kolkata")));
 		
 		post.setCommentCount(post.getCommentCount() +1);
 		this.postRepo.save(post);
@@ -71,11 +76,14 @@ public class CommentServiceimpl implements CommentService {
 	    notification.setMessage(user.getName() + " has commented on your post.");
 	    notification.setPostId(post.getPostId());
 	    notification.setCommentId(saveComment.getId());
-	    notification.setTimestamp(LocalDateTime.now());
+        notification.setTimestamp(LocalDateTime.now(ZoneId.of("Asia/Kolkata")));
+        notification.setSenderProfilePicUrl(user.getProfilepic());
+        notification.setRedirectUrl("/api/post/view/" + post.getPostId() + "#comment-" + saveComment.getId());
 
-	    notificationServiceImpl.sendNotification(notification);
+	    Notification save = notificationRepo.save(notification);
+
+	    notificationServiceImpl.sendNotification(save);
 	    
-	    notificationRepo.save(notification);
 
 
 		}
@@ -105,13 +113,16 @@ public class CommentServiceimpl implements CommentService {
 	}
 
 	@Override
-	public List<CommentDto> getCommentsByPost(Integer postId) {
-		Post post = this.postRepo.findById(postId).orElseThrow(()-> new ResourceNotFoundException("post", "postId", postId));
-		
-		List<Comment> byPost = this.commentRepo.findAllByPost(post);
-		
-		List<CommentDto> map = byPost.stream().map(comment-> modelMapper.map(comment, CommentDto.class)).collect(Collectors.toList());
-		return map;
+	public Page<CommentDto> getCommentsByPost(Integer postId, int page, int size) {
+	    Post post = this.postRepo.findById(postId)
+	            .orElseThrow(() -> new ResourceNotFoundException("post", "postId", postId));
+	    
+	    Pageable pageable = PageRequest.of(page, size, Sort.by("date").descending());
+	    Page<Comment> commentPage = commentRepo.findAllByPost(post, pageable);
+	    
+	    // Convert each Comment entity to CommentDto
+	    return commentPage.map(comment -> modelMapper.map(comment, CommentDto.class));
 	}
+
 
 }

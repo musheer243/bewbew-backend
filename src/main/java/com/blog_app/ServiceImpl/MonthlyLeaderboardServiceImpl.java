@@ -1,6 +1,7 @@
 package com.blog_app.ServiceImpl;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -17,10 +18,10 @@ public class MonthlyLeaderboardServiceImpl implements MonthlyLeaderboardService 
 	
 	
 	@Override
-	public void updateMonthlyLeaderboard(String username) {
+	public void updateMonthlyLeaderboard(String username, String profilePic) {
 		
 		// Get the first day of the current month
-        LocalDate currentMonth = LocalDate.now().withDayOfMonth(1);
+        LocalDate currentMonth = LocalDate.now(ZoneId.of("Asia/Kolkata")).withDayOfMonth(1);
 
         // Check if user already has an entry for the current month
         MonthlyLeaderboard leaderboard = monthlyLeaderboardRepo.findByUsernameAndMonth(username, currentMonth);
@@ -31,6 +32,7 @@ public class MonthlyLeaderboardServiceImpl implements MonthlyLeaderboardService 
         	leaderboard.setUsername(username);
         	leaderboard.setPostCount(1);
         	leaderboard.setMonth(currentMonth);
+        	leaderboard.setProfilePic(profilePic);
         } else {
             // If an entry exists, just increment the post count
             leaderboard.setPostCount(leaderboard.getPostCount() + 1);

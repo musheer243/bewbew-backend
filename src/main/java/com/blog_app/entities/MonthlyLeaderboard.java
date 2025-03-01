@@ -23,4 +23,6 @@ public class MonthlyLeaderboard {
 	    private int postCount;
 	    
 	    private LocalDate month;
+	    
+	    private String profilePic;
 }

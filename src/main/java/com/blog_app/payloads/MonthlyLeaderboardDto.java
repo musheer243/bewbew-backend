@@ -18,4 +18,7 @@ public class MonthlyLeaderboardDto {
     private int postCount;
     
     private LocalDate month;
+    
+    private String profilePic;
+
 }
