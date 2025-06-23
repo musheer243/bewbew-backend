@@ -133,8 +133,8 @@ public class OAuth2Controller {
 	        UserDetails userDetails = this.userDetailsService.loadUserByUsername(user.getEmail());
 	        String token = this.jwtTokenHelper.generateToken(userDetails);
 
-	        // Redirect to frontend with the token
-	        String frontendRedirectUrl = "http://localhost:3000/login-success?token=" + token;
+	        // Redirect to frontend with the token https://bewbew.serveblog.net/
+	        String frontendRedirectUrl = "https://bewbew.serveblog.net/login-success?token=" + token;
 	        return new RedirectView(frontendRedirectUrl);
 	    }
 

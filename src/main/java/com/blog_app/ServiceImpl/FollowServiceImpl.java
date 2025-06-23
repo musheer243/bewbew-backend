@@ -216,7 +216,7 @@ public class FollowServiceImpl implements FollowService {
 	@Override
 	public List<FollowRequest> getAllReceivedRequests(int receiverId) {
 		// TODO Auto-generated method stub
-	    return followRequestRepo.findAllByReceiverId(receiverId);
+	    return followRequestRepo.findAllByReceiverIdAndStatus(receiverId, "Pending");
 	}
 	
 	

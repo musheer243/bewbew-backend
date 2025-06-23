@@ -1,8 +1,10 @@
 package com.blog_app.controller;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -56,6 +58,8 @@ public class MessageController {
 
 	//***
 	//to get users recent chats
+	// In MessageController.java - Update the getRecentChats method
+
 	@GetMapping("/{userId}/chats")
 	public ResponseEntity<List<UserDto>> getRecentChats(@PathVariable int userId) {
 	    Optional<User> user = userRepo.findById(userId);
@@ -64,16 +68,31 @@ public class MessageController {
 	    List<Message> messages = messageRepo.findDistinctBySenderOrReceiver(user.get(), user.get());
 	    Set<User> chatPartners = new HashSet<>();
 	    
+	    // Keep track of unread messages per chat partner
+	    Map<Integer, Integer> unreadCountMap = new HashMap<>();
+	    
 	    for (Message message : messages) {
+	        // Add chat partner to set
 	        if (message.getSender().getId() != userId) 
 	            chatPartners.add(message.getSender());
 	        if (message.getReceiver().getId() != userId)
 	            chatPartners.add(message.getReceiver());
+	        
+	        // Count unread messages (where current user is receiver and message is not read)
+	        if (message.getReceiver().getId() == userId && !message.isRead()) {
+	            int senderId = message.getSender().getId();
+	            unreadCountMap.put(senderId, unreadCountMap.getOrDefault(senderId, 0) + 1);
+	        }
 	    }
 	    
-	    // Convert to DTOs using model mapper
+	    // Convert to DTOs using model mapper and add unread count
 	    List<UserDto> userDtos = chatPartners.stream()
-	        .map(chatPartner -> modelMapper.map(chatPartner, UserDto.class))
+	        .map(chatPartner -> {
+	            UserDto dto = modelMapper.map(chatPartner, UserDto.class);
+	            // Add unread count to the DTO
+	            dto.setUnreadCount(unreadCountMap.getOrDefault(chatPartner.getId(), 0));
+	            return dto;
+	        })
 	        .collect(Collectors.toList());
 	    
 	    return ResponseEntity.ok(userDtos);

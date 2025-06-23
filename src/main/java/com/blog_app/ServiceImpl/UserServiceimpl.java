@@ -129,6 +129,12 @@ public class UserServiceimpl implements UserService {
 
         // Update profile picture if provided
         if (image != null && !image.isEmpty()) {
+            String defaultProfilePic = "https://bewbew-images-bucket.s3.amazonaws.com/profile_pic.jfif";
+            // If current profile pic is not the default, then delete the old file
+            if (user.getProfilepic() != null && !user.getProfilepic().equals(defaultProfilePic)) {
+                this.fileService.deleteUserFile(user.getProfilepic());
+            }
+            // Upload the new image and update the profile picture field
             String filename = this.fileService.uploadImage(image);
             user.setProfilepic(filename);
         }
@@ -344,15 +350,16 @@ public class UserServiceimpl implements UserService {
 			
 			
 			if (user.getCloseFriends().contains(friend)) {
-				continue;
-				}
-			
+				throw new PostUpdateDataNotFoundException("user already exists in close friend");
+			}
+
 			if (user.getFollowers().contains(friend)) {
 				user.getCloseFriends().add(friend);
+				userRepo.save(user);
+				return true;	
 			}
 		}
-		userRepo.save(user);
-		return true;
+		return false;
 	}
 	
 	@Override

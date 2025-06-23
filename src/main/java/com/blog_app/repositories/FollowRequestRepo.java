@@ -13,7 +13,8 @@ public interface FollowRequestRepo extends JpaRepository<FollowRequest, Integer>
 
 	FollowRequest findBySenderIdAndReceiverIdAndStatus(int viewerId, int userId, String string);
 
-	java.util.List<FollowRequest> findAllByReceiverId(int receiverId);
+	java.util.List<FollowRequest> findAllByReceiverIdAndStatus(int receiverId, String status);
+
 
 
 }

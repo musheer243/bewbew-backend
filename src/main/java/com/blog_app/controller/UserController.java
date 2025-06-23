@@ -119,8 +119,10 @@ public class UserController {
 	//***
 	@GetMapping("/{userId}")
 	public ResponseEntity<UserDto> getSingleUser(@PathVariable Integer userId){
-		return ResponseEntity.ok(this.userService.getUserDtoById(userId));      //Used getUserDtoById instead of getUserById
-		
+		UserDto userDto = this.userService.getUserDtoById(userId);
+		userDto.setPassword(null);
+		 
+		 return ResponseEntity.ok(userDto);
 	}
 	
 	//method to serve user profilepic
@@ -205,6 +207,9 @@ public class UserController {
 			@GetMapping("/search/{name}")
 			public ResponseEntity<List<UserDto>> searchUser(@PathVariable String name){
 				List<UserDto> searchedUser = this.userService.searchUser(name);
+				for(UserDto resUserDto : searchedUser) {
+					resUserDto.setPassword(null);
+				}
 				return new ResponseEntity<List<UserDto>>(searchedUser,HttpStatus.OK);
 			}
 			

@@ -67,6 +67,7 @@ public class UserDto {
 
     private int totalFollowings = 0;
 
+    private int unreadCount;
 
 //    private Set<UserDto> followers = new HashSet<>();
 //
